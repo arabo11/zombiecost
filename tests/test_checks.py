@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
-from awswaste.checks import UnattachedEbsVolumes, UnusedElasticIps, OldSnapshots, IdleEc2Instances
-from awswaste.scanner import scan
+from ghostbill.checks import UnattachedEbsVolumes, UnusedElasticIps, OldSnapshots, IdleEc2Instances
+from ghostbill.scanner import scan
 
 REGION = "us-east-1"
 

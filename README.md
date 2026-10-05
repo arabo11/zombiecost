@@ -1,4 +1,6 @@
-# awswaste
+# ghostbill
+
+Stop paying for AWS resources that are ghosts.
 
 Find idle and forgotten AWS resources and see what they cost you every month.
 
@@ -19,7 +21,7 @@ Prices are rough us-east-1 on-demand numbers. The goal is order of magnitude, no
 ## Install
 
 ```bash
-pip install awswaste
+pip install ghostbill
 ```
 
 Or from a clone:
@@ -32,9 +34,9 @@ pip install -e ".[dev]"
 ## Run
 
 ```bash
-awswaste                                  # every enabled region, default profile
-awswaste --profile prod --regions eu-west-1,us-east-1
-awswaste --days 30 --json report.json     # longer lookback, machine-readable output
+ghostbill                                  # every enabled region, default profile
+ghostbill --profile prod --regions eu-west-1,us-east-1
+ghostbill --days 30 --json report.json     # longer lookback, machine-readable output
 ```
 
 ## Permissions

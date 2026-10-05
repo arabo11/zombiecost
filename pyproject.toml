@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "awswaste"
+name = "ghostbill"
 version = "0.1.0"
 description = "Find idle and forgotten AWS resources and estimate what they cost you every month."
 readme = "README.md"
@@ -21,10 +21,10 @@ dev = [
 ]
 
 [project.scripts]
-awswaste = "awswaste.cli:main"
+ghostbill = "ghostbill.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["awswaste*"]
+include = ["ghostbill*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
