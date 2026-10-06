@@ -14,7 +14,7 @@ from .scanner import scan
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="ghostbill",
+        prog="zombiecost",
         description="Find idle and forgotten AWS resources and estimate what they cost every month.",
     )
     p.add_argument("--profile", help="AWS named profile to use")
@@ -24,7 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--days", type=int, default=14, help="Lookback window for utilization metrics (default 14)")
     p.add_argument("--json", dest="json_path", help="Also write the full report as JSON to this path")
-    p.add_argument("--version", action="version", version=f"ghostbill {__version__}")
+    p.add_argument("--version", action="version", version=f"zombiecost {__version__}")
     return p
 
 

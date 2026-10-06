@@ -1,6 +1,6 @@
-# ghostbill
+# zombiecost
 
-Stop paying for AWS resources that are ghosts.
+Find the zombie resources in your AWS account: things that should be dead but still bill you every month.
 
 Find idle and forgotten AWS resources and see what they cost you every month.
 
@@ -21,7 +21,7 @@ Prices are rough us-east-1 on-demand numbers. The goal is order of magnitude, no
 ## Install
 
 ```bash
-pip install ghostbill
+pip install zombiecost
 ```
 
 Or from a clone:
@@ -34,9 +34,9 @@ pip install -e ".[dev]"
 ## Run
 
 ```bash
-ghostbill                                  # every enabled region, default profile
-ghostbill --profile prod --regions eu-west-1,us-east-1
-ghostbill --days 30 --json report.json     # longer lookback, machine-readable output
+zombiecost                                  # every enabled region, default profile
+zombiecost --profile prod --regions eu-west-1,us-east-1
+zombiecost --days 30 --json report.json     # longer lookback, machine-readable output
 ```
 
 ## Permissions

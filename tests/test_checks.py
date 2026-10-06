@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
-from ghostbill.checks import UnattachedEbsVolumes, UnusedElasticIps, OldSnapshots, IdleEc2Instances
-from ghostbill.scanner import scan
+from zombiecost.checks import UnattachedEbsVolumes, UnusedElasticIps, OldSnapshots, IdleEc2Instances
+from zombiecost.scanner import scan
 
 REGION = "us-east-1"
 

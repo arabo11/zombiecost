@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ghostbill"
+name = "zombiecost"
 version = "0.1.0"
-description = "Find idle and forgotten AWS resources and estimate what they cost you every month."
+description = "Find zombie AWS resources: idle and forgotten things that should be dead but still bill you every month."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -21,10 +21,10 @@ dev = [
 ]
 
 [project.scripts]
-ghostbill = "ghostbill.cli:main"
+zombiecost = "zombiecost.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["ghostbill*"]
+include = ["zombiecost*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
