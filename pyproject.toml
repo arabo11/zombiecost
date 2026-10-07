@@ -21,6 +21,11 @@ dev = [
   "moto[ec2,cloudwatch]>=5.0",
 ]
 
+[project.urls]
+Homepage = "https://zombiecost.com"
+Source = "https://github.com/arabo11/zombiecost"
+Issues = "https://github.com/arabo11/zombiecost/issues"
+
 [project.scripts]
 zombiecost = "zombiecost.cli:main"
 
