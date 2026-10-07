@@ -19,4 +19,15 @@ ALL_CHECKS: list[type[Check]] = [
     StaleS3Buckets,
 ]
 
-__all__ = ["Check", "ALL_CHECKS"]
+__all__ = ["Check", "ALL_CHECKS", "select_checks"]
+
+
+def select_checks(only: list[str] | None = None, skip: list[str] | None = None) -> list[type[Check]]:
+    """Filter ALL_CHECKS by name. Unknown names raise ValueError so typos fail loudly."""
+    names = {c.name for c in ALL_CHECKS}
+    for group in (only or []), (skip or []):
+        unknown = sorted(set(group) - names)
+        if unknown:
+            raise ValueError(f"unknown check(s): {', '.join(unknown)}. Known: {', '.join(sorted(names))}")
+    chosen = [c for c in ALL_CHECKS if (not only or c.name in only) and c.name not in (skip or [])]
+    return chosen

@@ -158,3 +158,14 @@ def test_recently_written_bucket_is_not_flagged_and_prefixes_are_ignored(session
     findings = StaleS3Buckets(session).run(REGION)
 
     assert findings == []
+
+
+def test_select_checks_filters_and_rejects_unknown_names():
+    import pytest
+    from zombiecost.checks import ALL_CHECKS, select_checks
+
+    assert select_checks() == ALL_CHECKS
+    assert [c.name for c in select_checks(skip=["s3-stale"])] == [c.name for c in ALL_CHECKS if c.name != "s3-stale"]
+    assert [c.name for c in select_checks(only=["eip-unused", "ebs-unattached"])] == ["ebs-unattached", "eip-unused"]
+    with pytest.raises(ValueError):
+        select_checks(only=["s3-stael"])

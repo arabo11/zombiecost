@@ -10,6 +10,7 @@ from rich.table import Table
 
 from . import __version__
 from .scanner import scan
+from .checks import ALL_CHECKS, select_checks
 from .redact import Redactor
 
 
@@ -30,6 +31,9 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Replace resource IDs, names, IPs and the account ID with placeholders so the report can be shared",
     )
+    p.add_argument("--only", help="Comma-separated check names to run (default: all)")
+    p.add_argument("--skip", help="Comma-separated check names to skip, e.g. s3-stale if you do not want object keys listed")
+    p.add_argument("--list-checks", action="store_true", help="Print the available checks and exit")
     p.add_argument("--version", action="version", version=f"zombiecost {__version__}")
     return p
 
@@ -37,6 +41,19 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     console = Console(stderr=True)
+
+    if args.list_checks:
+        for c in ALL_CHECKS:
+            print(f"{c.name:16} {c.description}")
+        return 0
+    try:
+        checks = select_checks(
+            only=[x.strip() for x in args.only.split(",")] if args.only else None,
+            skip=[x.strip() for x in args.skip.split(",")] if args.skip else None,
+        )
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        return 2
 
     session = boto3.Session(profile_name=args.profile)
     regions = [r.strip() for r in args.regions.split(",")] if args.regions else None
@@ -46,6 +63,7 @@ def main(argv: list[str] | None = None) -> int:
             session,
             regions=regions,
             lookback_days=args.days,
+            checks=checks,
             on_progress=lambda region, check: status.update(f"Scanning {region}: {check}"),
         )
 
