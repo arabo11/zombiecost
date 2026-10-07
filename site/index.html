@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>zombiecost</title>
+<meta name="description" content="Find the AWS resources that should be dead but still bill you every month. A free, read-only CLI.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧟</text></svg>">
+<style>
+  :root{--bg:#0b0d10;--fg:#e6e8eb;--muted:#9aa3ad;--accent:#7cff6b;--card:#14181d;--border:#232a32}
+  @media (prefers-color-scheme: light){:root{--bg:#fafbfc;--fg:#14181d;--muted:#5b6670;--accent:#1f8a2b;--card:#fff;--border:#e3e8ee}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  main{max-width:720px;margin:0 auto;padding:56px 16px 80px}
+  h1{font-size:clamp(28px,5vw,40px);line-height:1.15;margin:0 0 12px}
+  h2{font-size:20px;margin:40px 0 12px}
+  p{margin:0 0 14px}
+  .lede{font-size:18px;color:var(--muted)}
+  pre{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:auto;font:13.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;margin:18px 0}
+  .k{color:var(--accent)}
+  ul{padding-left:20px}
+  li{margin:6px 0}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-top:28px}
+  form{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  input[type=email]{flex:1 1 220px;padding:10px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);font-size:15px}
+  button{padding:10px 16px;border-radius:6px;border:0;background:var(--accent);color:#06120a;font-weight:600;font-size:15px;cursor:pointer}
+  a{color:var(--accent)}
+  footer{margin-top:56px;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Find the AWS resources that should be dead but still bill you.</h1>
+  <p class="lede">zombiecost is a free, read-only CLI. One scan, one table, a number at the bottom you can act on today.</p>
+
+<pre><span class="k">$</span> pip install zombiecost
+<span class="k">$</span> zombiecost --profile prod
+
+ Check           Region     Resource                What we found                               Est. $/month
+ ec2-idle        eu-west-1  i-0a1b2c3d4e5f67890     m5.large 'batch-worker' averaged 1.2% CPU          70.08
+ nat-idle        eu-west-1  nat-0123456789abcdef0   NAT gateway moved 4.1 MiB in 14 days               32.85
+ lb-unused       us-east-1  legacy-api              application load balancer has no targets           16.43
+ ebs-unattached  eu-west-1  vol-0fedcba9876543210   500 GiB gp2 volume not attached to anything        50.00
+ eip-unused      us-east-1  eipalloc-0abc123def45    Elastic IP 54.12.34.56 is not associated            3.65
+
+ Estimated waste: $173.01 per month across 5 resources in 17 regions.</pre>
+
+  <h2>What it checks</h2>
+  <ul>
+    <li>EBS volumes attached to nothing, and snapshots older than 90 days no AMI uses</li>
+    <li>Elastic IPs not associated with anything</li>
+    <li>EC2 instances under 3% CPU and RDS instances with zero connections</li>
+    <li>NAT gateways moving almost no traffic</li>
+    <li>Load balancers with no targets, or serving zero requests</li>
+    <li>S3 buckets nothing has written to in six months</li>
+  </ul>
+
+  <h2>Built not to annoy you</h2>
+  <ul>
+    <li><strong>Read-only.</strong> The IAM policy is eleven Describe, List and Get actions. It is in the README.</li>
+    <li><strong>No false alarms on new things.</strong> Anything younger than 3 days is skipped.</li>
+    <li><strong>Honest about limits.</strong> S3 findings say "reads unknown", because reads are invisible without paid request metrics.</li>
+    <li><strong>Fast.</strong> All regions in parallel, about 9 seconds on an empty account.</li>
+  </ul>
+
+  <p>Source and IAM policy: <a href="https://github.com/arabo11/zombiecost">github.com/arabo11/zombiecost</a>. MIT licensed.</p>
+
+  <div class="card">
+    <strong>Want this as a weekly scan with a Slack message, across all your accounts, without running anything yourself?</strong>
+    <p style="color:var(--muted);margin-top:6px">That is what gets built next if enough people want it. Leave an email and you will hear when it exists. Nothing else, ever.</p>
+    <form action="FORM_ACTION_PLACEHOLDER" method="POST">
+      <input type="email" name="email" placeholder="you@company.com" required>
+      <button type="submit">Tell me when it exists</button>
+    </form>
+  </div>
+
+  <footer>zombiecost is a side project by an AWS engineer who got tired of explaining the same line on the bill. Prices in reports are estimates.</footer>
+</main>
+</body>
+</html>
