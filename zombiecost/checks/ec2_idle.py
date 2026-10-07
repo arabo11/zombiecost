@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from ..models import Finding
 from .. import pricing
 from .base import Check
@@ -10,8 +12,11 @@ class IdleEc2Instances(Check):
     description = "Running instances whose average CPU over the lookback window is below the threshold."
 
     cpu_threshold_percent = 3.0
+    # An instance younger than this has not had a chance to do anything yet.
+    min_age_days = 3
 
     def run(self, region: str) -> list[Finding]:
+        now = datetime.now(timezone.utc)
         ec2 = self.session.client("ec2", region_name=region)
         findings: list[Finding] = []
         paginator = ec2.get_paginator("describe_instances")
@@ -19,6 +24,9 @@ class IdleEc2Instances(Check):
             for reservation in page.get("Reservations", []):
                 for inst in reservation.get("Instances", []):
                     instance_id = inst["InstanceId"]
+                    age_days = (now - inst["LaunchTime"]).days
+                    if age_days < self.min_age_days:
+                        continue
                     avg_cpu = self._metric_average(
                         region,
                         "AWS/EC2",
@@ -36,7 +44,7 @@ class IdleEc2Instances(Check):
                             region=region,
                             description=(
                                 f"{itype} instance{' ' + repr(name) if name else ''} averaged "
-                                f"{avg_cpu:.1f}% CPU over {self.lookback_days} days"
+                                f"{avg_cpu:.1f}% CPU over the last {min(age_days, self.lookback_days)} days"
                             ),
                             monthly_cost_estimate=pricing.ec2_monthly(itype),
                             recommendation="Stop it, downsize it, or move the workload to a scheduled job.",
@@ -44,6 +52,7 @@ class IdleEc2Instances(Check):
                                 "instance_type": itype,
                                 "name": name,
                                 "avg_cpu_percent": round(avg_cpu, 2),
+                                "age_days": age_days,
                                 "launch_time": inst["LaunchTime"].isoformat(),
                             },
                         )

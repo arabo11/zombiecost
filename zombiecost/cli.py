@@ -58,15 +58,16 @@ def main(argv: list[str] | None = None) -> int:
         out.print(table)
         out.print(
             f"\n[bold]Estimated waste: ${result.total_monthly_estimate:,.2f} per month[/bold] "
-            f"across {len(result.findings)} resources in {len(result.regions)} regions.\n"
+            f"across {len(result.findings)} resource{'s' if len(result.findings) != 1 else ''} "
+            f"in {len(result.regions)} region{'s' if len(result.regions) != 1 else ''}.\n"
         )
     else:
-        out.print(f"[green]No waste found in {len(result.regions)} regions. Nice.[/green]")
+        out.print(f"[green]No waste found in {len(result.regions)} region{'s' if len(result.regions) != 1 else ''}. Nice.[/green]")
 
     if args.json_path:
         with open(args.json_path, "w") as fh:
             json.dump(result.to_dict(), fh, indent=2, default=str)
-        out.print(f"Full report written to {args.json_path}")
+        out.print(f"Full report written to {args.json_path}", soft_wrap=True)
 
     return 0
 

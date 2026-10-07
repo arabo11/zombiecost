@@ -43,7 +43,30 @@ def test_recent_snapshot_is_not_flagged(session):
     assert findings == []
 
 
-def test_idle_instance_is_flagged_when_cpu_is_low(session):
+def test_brand_new_instance_is_not_flagged_even_with_low_cpu(session):
+    ec2 = session.client("ec2", region_name=REGION)
+    cw = session.client("cloudwatch", region_name=REGION)
+    ami = ec2.describe_images()["Images"][0]["ImageId"]
+    inst = ec2.run_instances(ImageId=ami, InstanceType="t3.micro", MinCount=1, MaxCount=1)["Instances"][0]
+    cw.put_metric_data(
+        Namespace="AWS/EC2",
+        MetricData=[{
+            "MetricName": "CPUUtilization",
+            "Dimensions": [{"Name": "InstanceId", "Value": inst["InstanceId"]}],
+            "Timestamp": datetime.now(timezone.utc) - timedelta(hours=1),
+            "Value": 0.0,
+            "Unit": "Percent",
+        }],
+    )
+
+    findings = IdleEc2Instances(session, lookback_days=14).run(REGION)
+
+    assert findings == []  # launched just now, too young to judge
+
+
+def test_idle_instance_is_flagged_when_cpu_is_low(session, monkeypatch):
+    # moto launches instances "now"; pretend this one is old enough to judge.
+    monkeypatch.setattr(IdleEc2Instances, "min_age_days", 0)
     ec2 = session.client("ec2", region_name=REGION)
     cw = session.client("cloudwatch", region_name=REGION)
     ami = ec2.describe_images()["Images"][0]["ImageId"]
