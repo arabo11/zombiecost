@@ -45,6 +45,7 @@ pip install -e ".[dev]"
 zombiecost                                  # every enabled region, default profile
 zombiecost --profile prod --regions eu-west-1,us-east-1
 zombiecost --days 30 --json report.json     # longer lookback, machine-readable output
+zombiecost --redact                         # placeholders instead of IDs, names and IPs: safe to paste publicly
 ```
 
 ## Permissions

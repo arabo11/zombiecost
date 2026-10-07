@@ -10,6 +10,7 @@ from rich.table import Table
 
 from . import __version__
 from .scanner import scan
+from .redact import Redactor
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -24,6 +25,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--days", type=int, default=14, help="Lookback window for utilization metrics (default 14)")
     p.add_argument("--json", dest="json_path", help="Also write the full report as JSON to this path")
+    p.add_argument(
+        "--redact",
+        action="store_true",
+        help="Replace resource IDs, names, IPs and the account ID with placeholders so the report can be shared",
+    )
     p.add_argument("--version", action="version", version=f"zombiecost {__version__}")
     return p
 
@@ -42,6 +48,11 @@ def main(argv: list[str] | None = None) -> int:
             lookback_days=args.days,
             on_progress=lambda region, check: status.update(f"Scanning {region}: {check}"),
         )
+
+    if args.redact:
+        redactor = Redactor()
+        result.findings = [redactor.finding(f) for f in result.findings]
+        result.account_id = redactor.text(result.account_id)
 
     out = Console()
     table = Table(title=f"AWS waste report for account {result.account_id}")

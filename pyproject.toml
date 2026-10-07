@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zombiecost"
-version = "0.1.0"
+version = "0.1.1"
 description = "Find zombie AWS resources: idle and forgotten things that should be dead but still bill you every month."
 readme = "README.md"
 requires-python = ">=3.11"
