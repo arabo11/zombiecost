@@ -65,3 +65,20 @@ class Check(ABC):
         if not points:
             return None
         return sum(p["Sum"] for p in points)
+
+    def _metric_max(self, region: str, namespace: str, metric: str, dimensions: list[dict]) -> float | None:
+        cw = self.session.client("cloudwatch", region_name=region)
+        start, end = self._window()
+        resp = cw.get_metric_statistics(
+            Namespace=namespace,
+            MetricName=metric,
+            Dimensions=dimensions,
+            StartTime=start,
+            EndTime=end,
+            Period=86400,
+            Statistics=["Maximum"],
+        )
+        points = resp.get("Datapoints", [])
+        if not points:
+            return None
+        return max(p["Maximum"] for p in points)

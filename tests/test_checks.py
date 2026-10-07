@@ -105,3 +105,56 @@ def test_scan_sorts_findings_by_cost(session):
     costs = [f.monthly_cost_estimate for f in result.findings]
     assert costs == sorted(costs, reverse=True)
     assert result.total_monthly_estimate == round(0.8 + 50.0 + 3.65, 2)
+
+
+from zombiecost.checks import IdleRdsInstances, UnusedLoadBalancers, StaleS3Buckets
+
+
+def test_rds_with_zero_connections_is_flagged(session, monkeypatch):
+    monkeypatch.setattr(IdleRdsInstances, "min_age_days", 0)
+    rds = session.client("rds", region_name=REGION)
+    cw = session.client("cloudwatch", region_name=REGION)
+    rds.create_db_instance(
+        DBInstanceIdentifier="lonely-db", DBInstanceClass="db.t3.micro", Engine="postgres",
+        AllocatedStorage=20, MasterUsername="admin", MasterUserPassword="password123",
+    )
+    cw.put_metric_data(
+        Namespace="AWS/RDS",
+        MetricData=[{
+            "MetricName": "DatabaseConnections",
+            "Dimensions": [{"Name": "DBInstanceIdentifier", "Value": "lonely-db"}],
+            "Timestamp": datetime.now(timezone.utc) - timedelta(days=1),
+            "Value": 0.0,
+        }],
+    )
+
+    findings = IdleRdsInstances(session).run(REGION)
+
+    assert [f.resource_id for f in findings] == ["lonely-db"]
+    assert findings[0].monthly_cost_estimate == round(0.017 * 730 + 0.115 * 20, 2)
+
+
+def test_alb_with_no_targets_is_flagged(session):
+    ec2 = session.client("ec2", region_name=REGION)
+    elb = session.client("elbv2", region_name=REGION)
+    vpc = ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
+    s1 = ec2.create_subnet(VpcId=vpc, CidrBlock="10.0.1.0/24", AvailabilityZone=f"{REGION}a")["Subnet"]["SubnetId"]
+    s2 = ec2.create_subnet(VpcId=vpc, CidrBlock="10.0.2.0/24", AvailabilityZone=f"{REGION}b")["Subnet"]["SubnetId"]
+    sg = ec2.create_security_group(GroupName="lb", Description="lb", VpcId=vpc)["GroupId"]
+    elb.create_load_balancer(Name="empty-alb", Subnets=[s1, s2], SecurityGroups=[sg], Type="application")
+
+    findings = UnusedLoadBalancers(session).run(REGION)
+
+    assert [f.resource_id for f in findings] == ["empty-alb"]
+    assert "no registered targets" in findings[0].description
+
+
+def test_recently_written_bucket_is_not_flagged_and_prefixes_are_ignored(session):
+    s3 = session.client("s3", region_name=REGION)
+    s3.create_bucket(Bucket="busy-bucket")
+    s3.put_object(Bucket="busy-bucket", Key="new.txt", Body=b"hi")
+    s3.create_bucket(Bucket="cf-templates-ignored")
+
+    findings = StaleS3Buckets(session).run(REGION)
+
+    assert findings == []

@@ -15,8 +15,16 @@ One read-only scan. One table. A number at the bottom you can act on today.
 | `snapshots-old` | Snapshots older than 90 days that no AMI you own uses | GB-month snapshot price |
 | `ec2-idle` | Running instances averaging under 3% CPU over the lookback window | On-demand hourly price |
 | `nat-idle` | NAT gateways that moved under 1 GiB in the lookback window | Hourly NAT charge |
+| `rds-idle` | RDS instances with zero connections over the lookback window | Instance class + storage |
+| `lb-unused` | Load balancers with no registered targets, or ALBs that served 0 requests | Hourly LB charge |
+| `s3-stale` | Buckets nothing has written to in 180 days, with their size and storage class | GB-month by storage class |
 
 Prices are rough us-east-1 on-demand numbers. The goal is order of magnitude, not an invoice.
+
+Checks that depend on usage history (`ec2-idle`, `rds-idle`, `nat-idle`, `lb-unused`)
+ignore resources younger than 3 days, so a freshly launched instance is never
+reported as idle. `s3-stale` can see writes but not reads; it says so in every
+finding, because reads are invisible without paid request metrics.
 
 ## Install
 
@@ -57,7 +65,15 @@ The scan is read-only. Attach `ReadOnlyAccess`, or this minimal policy:
       "ec2:DescribeImages",
       "ec2:DescribeInstances",
       "ec2:DescribeNatGateways",
-      "cloudwatch:GetMetricStatistics"
+      "rds:DescribeDBInstances",
+      "elasticloadbalancing:DescribeLoadBalancers",
+      "elasticloadbalancing:DescribeTargetGroups",
+      "elasticloadbalancing:DescribeTargetHealth",
+      "s3:ListAllMyBuckets",
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+      "cloudwatch:GetMetricStatistics",
+      "cloudwatch:ListMetrics"
     ],
     "Resource": "*"
   }]
@@ -74,6 +90,7 @@ Tests run against [moto](https://github.com/getmoto/moto), no AWS account needed
 
 ## Roadmap
 
-- [ ] Idle RDS instances and unused load balancers
-- [ ] Unused security groups and empty target groups
+- [ ] Unused KMS keys, Secrets Manager secrets and VPC endpoints (small, fixed monthly charges that add up)
+- [ ] Stopped instances still paying for their volumes
+- [ ] Old AMIs and the snapshots behind them
 - [ ] Hosted version: cross-account role, weekly scans, Slack alerts

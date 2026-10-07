@@ -71,3 +71,63 @@ def nat_gateway_monthly() -> float:
 
 def ec2_monthly(instance_type: str) -> float:
     return round(EC2_HOUR.get(instance_type, EC2_DEFAULT_HOUR) * HOURS_PER_MONTH, 2)
+
+
+# --- RDS, on-demand single-AZ, us-east-1 ---
+RDS_HOUR = {
+    "db.t3.micro": 0.017,
+    "db.t3.small": 0.034,
+    "db.t3.medium": 0.068,
+    "db.t3.large": 0.136,
+    "db.t4g.micro": 0.016,
+    "db.t4g.small": 0.032,
+    "db.t4g.medium": 0.065,
+    "db.t4g.large": 0.129,
+    "db.m5.large": 0.171,
+    "db.m5.xlarge": 0.342,
+    "db.m6g.large": 0.152,
+    "db.m6g.xlarge": 0.304,
+    "db.r5.large": 0.24,
+    "db.r5.xlarge": 0.48,
+    "db.r6g.large": 0.218,
+}
+RDS_DEFAULT_HOUR = 0.20
+RDS_STORAGE_GB_MONTH = 0.115  # gp2/gp3
+
+
+def rds_monthly(instance_class: str, allocated_gb: int = 0, multi_az: bool = False) -> float:
+    hourly = RDS_HOUR.get(instance_class, RDS_DEFAULT_HOUR) * (2 if multi_az else 1)
+    return round(hourly * HOURS_PER_MONTH + RDS_STORAGE_GB_MONTH * allocated_gb, 2)
+
+
+# --- Load balancers, hourly base charge only (LCU/data charges excluded) ---
+LB_HOUR = {
+    "application": 0.0225,
+    "network": 0.0225,
+    "gateway": 0.0125,
+    "classic": 0.025,
+}
+
+
+def lb_monthly(lb_type: str) -> float:
+    return round(LB_HOUR.get(lb_type, 0.0225) * HOURS_PER_MONTH, 2)
+
+
+# --- S3 storage, $ per GB-month ---
+S3_GB_MONTH = {
+    "StandardStorage": 0.023,
+    "StandardIAStorage": 0.0125,
+    "OneZoneIAStorage": 0.01,
+    "IntelligentTieringFAStorage": 0.023,
+    "IntelligentTieringIAStorage": 0.0125,
+    "GlacierInstantRetrievalStorage": 0.004,
+    "GlacierStorage": 0.0036,
+    "DeepArchiveStorage": 0.00099,
+}
+
+
+def s3_monthly(bytes_by_storage_type: dict[str, float]) -> float:
+    total = 0.0
+    for storage_type, size_bytes in bytes_by_storage_type.items():
+        total += S3_GB_MONTH.get(storage_type, 0.023) * size_bytes / 1024**3
+    return round(total, 2)
