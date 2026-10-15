@@ -169,3 +169,17 @@ def test_select_checks_filters_and_rejects_unknown_names():
     assert [c.name for c in select_checks(only=["eip-unused", "ebs-unattached"])] == ["ebs-unattached", "eip-unused"]
     with pytest.raises(ValueError):
         select_checks(only=["s3-stael"])
+
+
+def test_cli_reports_expired_credentials_in_one_line(monkeypatch, capsys):
+    from botocore.exceptions import ClientError
+    from zombiecost import cli
+
+    def boom(*a, **k):
+        raise ClientError({"Error": {"Code": "ExpiredToken", "Message": "x"}}, "DescribeInstances")
+
+    monkeypatch.setattr(cli, "scan", boom)
+    rc = cli.main(["--regions", "eu-west-1"])
+
+    assert rc == 2
+    assert "expired or invalid" in capsys.readouterr().err

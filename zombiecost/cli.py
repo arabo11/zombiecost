@@ -5,6 +5,7 @@ import json
 import sys
 
 import boto3
+from botocore.exceptions import ClientError, NoCredentialsError, ProfileNotFound
 from rich.console import Console
 from rich.table import Table
 
@@ -55,17 +56,36 @@ def main(argv: list[str] | None = None) -> int:
         console.print(f"[red]{exc}[/red]")
         return 2
 
-    session = boto3.Session(profile_name=args.profile)
+    try:
+        session = boto3.Session(profile_name=args.profile)
+    except ProfileNotFound as exc:
+        console.print(f"[red]{exc}[/red]")
+        return 2
     regions = [r.strip() for r in args.regions.split(",")] if args.regions else None
 
-    with console.status("Scanning...") as status:
-        result = scan(
-            session,
-            regions=regions,
-            lookback_days=args.days,
-            checks=checks,
-            on_progress=lambda region, check: status.update(f"Scanning {region}: {check}"),
-        )
+    try:
+        with console.status("Scanning...") as status:
+            result = scan(
+                session,
+                regions=regions,
+                lookback_days=args.days,
+                checks=checks,
+                on_progress=lambda region, check: status.update(f"Scanning {region}: {check}"),
+            )
+    except NoCredentialsError:
+        console.print("[red]No AWS credentials found.[/red] Pass --profile, or set AWS_PROFILE or AWS_ACCESS_KEY_ID.")
+        return 2
+    except ClientError as exc:
+        code = exc.response.get("Error", {}).get("Code", "")
+        if code in {"InvalidClientTokenId", "ExpiredToken", "ExpiredTokenException", "RequestExpired", "AuthFailure", "UnrecognizedClientException"}:
+            hint = "Credentials are expired or invalid. Re-run your SSO login (aws sso login / Leapp) and try again."
+        elif code in {"AccessDenied", "AccessDeniedException", "UnauthorizedOperation"}:
+            hint = "Credentials work but lack a permission. See the IAM policy in the README."
+        else:
+            hint = "AWS returned an error."
+        op = exc.operation_name
+        console.print(f"[red]{hint}[/red] ({code} on {op})")
+        return 2
 
     if args.redact:
         redactor = Redactor()
